@@ -13,7 +13,7 @@ from attention import Attention
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import json
 from finbert import estimate_sentiment
 import config
@@ -50,7 +50,7 @@ class stockPred:
                  dropout: float = 0.2,
                  loss: str = 'mse',
                  optimizer: str = 'adam',
-                 epochs: int = 20,
+                 epochs: int = 25,
                  batch_size: int = 32,
                  output_size: int = 1
                  ):
@@ -104,13 +104,41 @@ class stockPred:
         scaled_data = scaler.fit_transform(data)
         return scaled_data, scaler
 
-    # train on all data for which labels are available (train + test from dev)
-    def getTrainData(self, scaled_data):
+    def getTrainData(self, scaled_data, test_size=0.2):
         x, y = [], []
         for price in range(self.look_back, len(scaled_data)):
             x.append(scaled_data[price - self.look_back:price, :])
             y.append(scaled_data[price, :])
-        return np.array(x), np.array(y)
+        x, y = np.array(x), np.array(y)
+
+        # Determine the size of the testing set
+        split_index = int(len(x) * (1 - test_size))
+
+        # Split the data into training and testing sets
+        x_train, x_test = x[:split_index], x[split_index:]
+        y_train, y_test = y[:split_index], y[split_index:]
+
+        return x_train, y_train, x_test, y_test
+    
+    def get_evaluation(self, x_test, y_test, model, scaler):
+        print("Shapes of x_test and y_test:", x_test.shape, y_test.shape)
+        # Predict on the testing set
+        y_pred = model.predict(x_test)
+
+        # Inverse transform the predicted and true values if you scaled them
+        y_pred_inverse = scaler.inverse_transform(y_pred)
+        y_test_inverse = scaler.inverse_transform(y_test)
+
+        # Calculate evaluation metrics
+        mae = mean_absolute_error(y_test_inverse, y_pred_inverse)
+        mse = mean_squared_error(y_test_inverse, y_pred_inverse)
+        rmse = mean_squared_error(y_test_inverse, y_pred_inverse, squared=False)
+        r2 = r2_score(y_test_inverse, y_pred_inverse)
+        logger.info(f"Mean Absolute Error (MAE): {mae}")
+        logger.info(f"Mean Squared Error (MSE): {mse}")
+        logger.info(f"Root Mean Squared Error (RMSE): {rmse}")
+        logger.info(f"R-squared (R2) Score: {r2}")
+
     
     def get_dates(self): 
         today = datetime.now()
@@ -135,17 +163,17 @@ class stockPred:
         model.add(LSTM(self.neurons, return_sequences=True))
         model.add(Dropout(self.dropout))
         model.add(LSTM(self.neurons))
-        model.add(Attention(self.neurons))
         model.add(Dropout(self.dropout))
+        model.add(Attention(self.neurons))
         model.add(Dense(units=self.output_size))
         model.add(Activation(self.activ_func))
-
         model.compile(loss=self.loss, optimizer=self.optimizer)
         return model
 
     def trainModel(self, x, y):
         x_train = x[: len(x) - 1]
         y_train = y[: len(x) - 1]
+        print('shape, ', x_train.shape[1], x_train.shape[2])
         model = self.LSTM_model(x_train)
         modelfit = model.fit(x_train, y_train, epochs=self.epochs,
                              batch_size=self.batch_size, verbose=1, shuffle=True)
@@ -166,7 +194,7 @@ class stockPred:
 
         logger.info("Getting Train Data")
         # get train data
-        x_train, y_train = self.getTrainData(scaled_data)
+        x_train, y_train, x_test, y_test = self.getTrainData(scaled_data)
 
         logger.info("Training Model")
         # Creates and returns a trained model
@@ -180,12 +208,16 @@ class stockPred:
 
         logger.info("Extracting data to predict on")
         # Extract the Closing prices that need to be fed into predict the result
-        x_pred = scaled_data[-self.look_back:]
-        x_pred = np.reshape(x_pred, (1, x_pred.shape[0]))
+        # x_pred = scaled_data[-self.look_back:]
+        # x_pred = np.reshape(x_pred, (1, x_pred.shape[0]))
+        x_pred = scaled_data[-self.look_back:].reshape(1, self.look_back, 1)
 
         # Predict the result
         logger.info("Predicting Price")
         pred = model.predict(x_pred)
+
+        logger.info('------- Model Evaluation -------')
+        self.get_evaluation(x_test, y_test, model, scaler)
         # fuse
         bias = 1
         sentiment_threshold = 0.9
@@ -196,7 +228,7 @@ class stockPred:
         fuse = (pred.item())*(prob**(1-bias))
         print('fuse')
         print(fuse)
-        pred = pred.squeeze()
+        pred = fuse.squeeze()
         pred = np.array([float(pred)])
         pred = np.reshape(pred, (pred.shape[0], 1))
         print('pred rescale')
