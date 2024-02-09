@@ -97,7 +97,7 @@ async def post_alpaca_order(side, size):
         else:
             market_order_data = MarketOrderRequest(
                 symbol="ETHUSD",
-                qty=size,
+                qty=size - 0.01,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.GTC
             )

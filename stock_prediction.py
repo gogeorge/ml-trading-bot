@@ -10,6 +10,7 @@ from tensorflow.keras.layers import Activation, Dense, Dropout, LSTM
 from sklearn.preprocessing import MinMaxScaler
 from alpaca.trading.client import TradingClient
 from attention import Attention
+from keras import regularizers
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -75,7 +76,7 @@ class stockPred:
         # Alpaca Market Data Client
         data_client = CryptoHistoricalDataClient()
 
-        time_diff = datetime.now() - relativedelta(hours=1000)
+        time_diff = datetime.now() - relativedelta(hours=3000)
         logger.info("Getting bar data for {0} starting from {1}".format(
             trading_pair, time_diff))
         # Defining Bar data request parameters
@@ -164,7 +165,7 @@ class stockPred:
         model.add(Dropout(self.dropout))
         model.add(LSTM(self.neurons))
         model.add(Dropout(self.dropout))
-        model.add(Attention(self.neurons))
+        model.add(Attention(self.neurons, regularization=regularizers.l2(0.01)))
         model.add(Dense(units=self.output_size))
         model.add(Activation(self.activ_func))
         model.compile(loss=self.loss, optimizer=self.optimizer)
