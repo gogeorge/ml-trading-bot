@@ -25,5 +25,8 @@ To run the bot use:
 
 Current inspiration for the architecture of the bot came from the following articles:
 
-https://cs230.stanford.edu/projects_winter_2020/reports/32066186.pdf \\
+https://cs230.stanford.edu/projects_winter_2020/reports/32066186.pdf
+
 https://machinelearningmastery.com/the-attention-mechanism-from-scratch/
+
+https://link.springer.com/article/10.1007/s13042-019-01041-1
