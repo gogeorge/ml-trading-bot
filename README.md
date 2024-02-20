@@ -3,7 +3,14 @@
 
 ## Description
 
-This is a trading bot that uses an Attention-LSTM model, that is a Long Term Short Term Memory model with a custom Attention layer attached to it in order to learn how a currency is behaving and predict the future price of that currency. This model is then fused with a sentiment model that rates the positivity or negativity of the crypto-related news. The sentiment model affects the final prediction way less than the LSTM model but that can be adjusted through a bias in the fuse equation.
+This is a trading bot that uses two types of LSTM models (Long Term Short Term Memory): 
+  1. LSTM model with a custom Attention layer attached to it in order to predict the closing price of a crypto-currency.
+  2. A multi-value assosicate LSTM model for closing, lowest and highest price.
+
+Furthermore, these models can be fused with a sentiment model that rates the positivity or negativity of the crypto-related news. The sentiment model affects the final prediction way less than the LSTM model but that can be adjusted through a bias in the fuse equation. The use of training and using these models on a crypto currency was to be able to study the patterns quicker than with normal stocks. 
+
+To changed the type of model being used, you can switch between ```stockPred``` (LSTM with Attention) and ```stockPredALSTM``` (Assosiciate LSTM).
+
 
 ## Installation
 
