@@ -5,6 +5,7 @@ import logging
 import asyncio
 import config
 from stock_prediction import stockPred
+from stock_prediction_alstm import stockPredALSTM
 
 
 # ENABLE LOGGING - options, DEBUG,INFO, WARNING?
@@ -37,7 +38,7 @@ async def main():
     while True:
         logger.info('----------------------------------------------------')
 
-        pred = stockPred()
+        pred = stockPredALSTM()
         global predicted_price, current_price
         predicted_price = pred.predictModel()
         current_price = pred.getCurrentPrice()
@@ -86,7 +87,7 @@ async def post_alpaca_order(side, size):
         if side == 'buy':
             market_order_data = MarketOrderRequest(
                 symbol="ETHUSD",
-                qty=size,
+                qty=size - 0.2,
                 side=OrderSide.BUY,
                 time_in_force=TimeInForce.GTC
             )
@@ -97,7 +98,7 @@ async def post_alpaca_order(side, size):
         else:
             market_order_data = MarketOrderRequest(
                 symbol="ETHUSD",
-                qty=size - 0.01,
+                qty=size - 0.2,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.GTC
             )

@@ -39,8 +39,6 @@ predicted_price = 0
 
 class stockPred:
     def __init__(self,
-                 past_days: int = 50,
-                 trading_pair: str = 'ETHUSD',
                  exchange: str = 'FTXU',
                  feature: str = 'close',
 
@@ -88,7 +86,7 @@ class stockPred:
         # Get the bar data from Alpaca
         df = data_client.get_crypto_bars(request_params).df
         global current_price
-        current_price = df.iloc[-1]['close']
+        current_price = df.iloc[-1][self.feature]
         return df
 
     @staticmethod
@@ -208,9 +206,6 @@ class stockPred:
         logger.info(sentiment)
 
         logger.info("Extracting data to predict on")
-        # Extract the Closing prices that need to be fed into predict the result
-        # x_pred = scaled_data[-self.look_back:]
-        # x_pred = np.reshape(x_pred, (1, x_pred.shape[0]))
         x_pred = scaled_data[-self.look_back:].reshape(1, self.look_back, 1)
 
         # Predict the result
@@ -238,4 +233,3 @@ class stockPred:
         # Inverse the scaling to get the actual price
         pred_true = scaler.inverse_transform(pred)
         return pred_true[0][0]
-
